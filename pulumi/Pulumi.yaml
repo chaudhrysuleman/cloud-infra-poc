@@ -106,7 +106,8 @@ resources:
         - protocol: tcp
           fromPort: 5432
           toPort: 5432
-          securityGroups: [${ec2Sg.id}]
+          securityGroups:
+            - ${ec2Sg.id}
           description: Allow connections from EC2 app server only
       egress:
         - protocol: "-1"
@@ -261,11 +262,16 @@ resources:
           Version: "2012-10-17"
           Statement:
             - Effect: Allow
-              Action: ["s3:*"]
-              Resource: [${invoicesBucket.arn}, "${invoicesBucket.arn}/*"]
+              Action:
+                - "s3:*"
+              Resource:
+                - ${invoicesBucket.arn}
+                - ${invoicesBucket.arn}/*
             - Effect: Allow
-              Action: ["sns:Publish"]
-              Resource: [${snsTopic.arn}]
+              Action:
+                - "sns:Publish"
+              Resource:
+                - ${snsTopic.arn}
             - Effect: Allow
               Action:
                 - sqs:ReceiveMessage
@@ -290,7 +296,9 @@ resources:
     type: aws:rds:SubnetGroup
     properties:
       name: poc-rds-subnet-group
-      subnetIds: [${privateSubnet1.id}, ${privateSubnet2.id}]
+      subnetIds:
+        - ${privateSubnet1.id}
+        - ${privateSubnet2.id}
       tags:
         Name: poc-rds-subnet-group
 
@@ -306,7 +314,8 @@ resources:
       username: dbadmin
       password: ${dbPassword}
       dbSubnetGroupName: ${rdsSubnetGroup.name}
-      vpcSecurityGroupIds: [${rdsSg.id}]
+      vpcSecurityGroupIds:
+        - ${rdsSg.id}
       skipFinalSnapshot: true
       tags:
         Name: poc-postgres-database
@@ -319,7 +328,7 @@ resources:
     properties:
       keyName: poc-ssh-key
       publicKey:
-        fn::file: ~/.ssh/id_ed25519_github.pub
+        fn::readFile: /Users/muhammad/.ssh/id_ed25519_github.pub
 
   webHost:
     type: aws:ec2:Instance
@@ -338,7 +347,8 @@ resources:
             owners: ["099720109477"]
           return: id
       subnetId: ${publicSubnet.id}
-      vpcSecurityGroupIds: [${ec2Sg.id}]
+      vpcSecurityGroupIds:
+        - ${ec2Sg.id}
       keyName: ${sshKey.keyName}
       iamInstanceProfile: ${ec2InstanceProfile.name}
       userData: |
