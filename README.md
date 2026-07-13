@@ -169,21 +169,26 @@ To deploy the infrastructure and application to AWS:
 5. Once complete, copy the output values (especially `ec2_public_ip` and `rds_endpoint`).
 
 #### Deploying the Application
-Since compiling Docker images locally on Mac M-series chips and pushing them can sometimes face local daemon issues, we use the custom `deploy.sh` script to compile the application locally and deploy the container directly on the EC2 host:
-1. Open the [deploy.sh](app/deploy.sh) script and ensure the configurations (`EC2_IP`, `RDS_HOST`) match your Terraform outputs.
-2. Run the deployment script from the `app/` directory:
+To deploy the infrastructure and application to AWS, we use a fully automated orchestration script `deploy.sh` that provisions the cloud resources, extracts endpoints, compiles the Java code, and runs the container on EC2:
+
+1. Make sure you have configured your AWS CLI credentials (see Prerequisites above).
+2. Navigate to the `app/` directory:
    ```bash
-   cd ../app
+   cd app
+   ```
+3. Run the unified deployment script:
+   ```bash
    chmod +x deploy.sh
    ./deploy.sh
    ```
-3. The script will:
-   * Compile the Java Spring Boot code locally into a production JAR.
-   * Securely transfer the JAR and runtime configurations to the EC2 server.
-   * Rebuild the Docker image directly on the EC2 host.
-   * Stop the old container and start the new Spring Boot application, linking it to the RDS database.
+4. The script will automatically:
+   * Run `terraform apply` to spin up all 29 AWS resources.
+   * Dynamically query the newly generated EC2 IP, RDS host, and S3 bucket details.
+   * Write and synchronize these values to your local `.env` configuration file.
+   * Compile your Java Spring Boot application into a JAR.
+   * Copy the build artifact to your EC2 host and deploy the Docker container live.
 
-4. Open `http://<EC2-PUBLIC-IP>/` in your browser to view your live, cloud-deployed dashboard!
+5. Open `http://<EC2-PUBLIC-IP>/` (the IP shown in the console output) in your browser to view your live tracking dashboard!
 
 ---
 
