@@ -1,0 +1,35 @@
+# --- Version Control Ignore List ---
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Java Build Artifacts
+**/target/
+**/*.jar
+**/*.war
+**/*.class
+
+# IDE Settings
+.idea/
+.vscode/
+*.iml
+*.iws
+
+# Secrets & Environment Configurations
+.env
+.env.local
+terraform.tfvars
+*.tfvars.json
+
+# Terraform State & Cache Files
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+crash.log
+
+# Private SSH keys (if generated inside project)
+*.pem
+id_rsa
+id_ed25519
