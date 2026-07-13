@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Too Good To Go - Parcels Order System</title>
+    <!-- Outfit Font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #006644;
+            --primary-light: #00885a;
+            --primary-glow: rgba(0, 102, 68, 0.15);
+            --accent: #ff6633;
+            --accent-glow: rgba(255, 102, 51, 0.15);
+            --bg-dark: #0b0f19;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --border: rgba(255, 255, 255, 0.08);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --placed: #3b82f6;
+            --processing: #f59e0b;
+            --shipped: #8b5cf6;
+            --delivered: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(0, 102, 68, 0.2) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(255, 102, 51, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Container & Navigation */
+        .app-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem;
+            flex: 1;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .logo i {
+            color: var(--delivered);
+            font-size: 1.75rem;
+            filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
+        }
+
+        .logo span {
+            color: var(--delivered);
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            padding: 0.25rem;
+            border-radius: 9999px;
+            gap: 0.25rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.5rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        /* Glassmorphic Card base */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            padding: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            box-shadow: 0 8px 32px 0 rgba(0, 102, 68, 0.08);
+        }
+
+        /* Forms & Inputs */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .input-text {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            color: #fff;
+            outline: none;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-text:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+
+        /* Checklist selector */
+        .item-checklist {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .checkbox-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .checkbox-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .checkbox-card input {
+            accent-color: var(--primary);
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+        }
+
+        .checkbox-card.selected {
+            background: var(--primary-glow);
+            border-color: var(--primary);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.85rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 14px var(--primary-glow);
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-badge.placed {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--placed);
+        }
+
+        .status-badge.processing {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--processing);
+        }
+
+        .status-badge.shipped {
+            background: rgba(139, 92, 246, 0.15);
+            color: var(--shipped);
+        }
+
+        .status-badge.delivered {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--delivered);
+        }
+
+        /* Dashboard Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.25rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .stat-card.total::before {
+            background: var(--text-muted);
+        }
+
+        .stat-card.placed::before {
+            background: var(--placed);
+        }
+
+        .stat-card.processing::before {
+            background: var(--processing);
+        }
+
+        .stat-card.shipped::before {
+            background: var(--shipped);
+        }
+
+        .stat-card.delivered::before {
+            background: var(--delivered);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        /* Dashboard Table */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 1rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        /* Action Buttons in Table */
+        .actions-cell {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-action {
+            padding: 0.4rem 0.85rem;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .btn-action.ship {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--shipped);
+            border-color: rgba(139, 92, 246, 0.2);
+        }
+
+        .btn-action.ship:hover {
+            background: var(--shipped);
+            color: #fff;
+        }
+
+        .btn-action.deliver {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--delivered);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-action.deliver:hover {
+            background: var(--delivered);
+            color: #fff;
+        }
+
+        .btn-action.invoice {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border-color: var(--border);
+            text-decoration: none;
+        }
+
+        .btn-action.invoice:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Live Tracker overlay on order creation */
+        .tracker-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .tracker-modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .tracker-content {
+            background: #111827;
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            width: 90%;
+            max-width: 550px;
+            padding: 2.5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .close-modal:hover {
+            color: #fff;
+        }
+
+        .tracker-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            margin: 2.5rem 0 2rem 0;
+        }
+
+        .tracker-line {
+            position: absolute;
+            top: 15px;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 1;
+            transform: translateY(-50%);
+        }
+
+        .tracker-line-progress {
+            position: absolute;
+            top: 15px;
+            left: 0;
+            width: 0%;
+            height: 4px;
+            background: var(--delivered);
+            z-index: 2;
+            transform: translateY(-50%);
+            transition: width 0.5s ease;
+        }
+
+        .step-node {
+            width: 30px;
+            height: 30px;
+            background: #1f2937;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            position: relative;
+            z-index: 3;
+            transition: all 0.3s ease;
+        }
+
+        .step-node.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 12px var(--primary-light);
+        }
+
+        .step-node.completed {
+            border-color: var(--delivered);
+            background: var(--delivered);
+            color: #fff;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .step-label {
+            position: absolute;
+            top: 36px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .step-node.active .step-label {
+            color: #fff;
+        }
+
+        .step-node.completed .step-label {
+            color: var(--delivered);
+        }
+
+        .pulse {
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 102, 68, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(0, 102, 68, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 102, 68, 0);
+            }
+        }
+
+        /* Notification Feed */
+        .logs-panel {
+            margin-top: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #34d399;
+            height: 120px;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .log-entry {
+            margin-bottom: 0.25rem;
+        }
+
+        /* Layout Grid */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 900px) {
+            .main-layout {
+                grid-template-columns: 380px 1fr;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <i class="fa-solid fa-leaf"></i>
+                Too Good To Go <span>Parcels Portal</span>
+            </div>
+            <div class="nav-tabs">
+                <button class="tab-btn active" onclick="switchTab('portal')">
+                    <i class="fa-solid fa-cart-plus"></i> Order Portal
+                </button>
+                <button class="tab-btn" onclick="switchTab('admin')">
+                    <i class="fa-solid fa-chart-line"></i> Admin Dashboard
+                </button>
+            </div>
+        </header>
+
+        <!-- Dynamic Content -->
+        <main class="main-layout" id="portal-tab">
+            <!-- Order Form Card -->
+            <section class="glass-card">
+                <h2 style="font-size: 1.35rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-bag-shopping" style="color: var(--delivered);"></i> Place Food Order
+                </h2>
+
+                <div class="form-group">
+                    <label for="customerName">Your Name</label>
+                    <input type="text" id="customerName" class="input-text" placeholder="Enter customer name"
+                        value="Marco">
+                </div>
+
+                <div class="form-group">
+                    <label>Select Items</label>
+                    <div class="item-checklist">
+                        <div class="checkbox-card selected" onclick="toggleCheckbox(this)">
+                            <input type="checkbox" id="item1" value="Surprise Bag" checked
+                                onclick="event.stopPropagation()">
+                            <span style="font-weight: 500;">Surprise Bag 🌱</span>
+                        </div>
+                        <div class="checkbox-card" onclick="toggleCheckbox(this)">
+                            <input type="checkbox" id="item2" value="Bakery Box" onclick="event.stopPropagation()">
+                            <span style="font-weight: 500;">Bakery Box 🥐</span>
+                        </div>
+                        <div class="checkbox-card" onclick="toggleCheckbox(this)">
+                            <input type="checkbox" id="item3" value="Sushi Box" onclick="event.stopPropagation()">
+                            <span style="font-weight: 500;">Sushi Box 🍣</span>
+                        </div>
+                        <div class="checkbox-card" onclick="toggleCheckbox(this)">
+                            <input type="checkbox" id="item4" value="Grocery Basket" onclick="event.stopPropagation()">
+                            <span style="font-weight: 500;">Grocery Basket 🥦</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-primary" onclick="submitOrder()">
+                    <i class="fa-solid fa-leaf"></i> Save Food & Order
+                </button>
+            </section>
+
+            <!-- Real-time Event simulation viewer -->
+            <section class="glass-card" style="display: flex; flex-direction: column;">
+                <h2 style="font-size: 1.35rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-server" style="color: var(--shipped);"></i> Local AWS Microservices Monitor
+                </h2>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">
+                    Visualizes the asynchronous SQS events processing in real-time.
+                </p>
+
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 1rem;">
+                    <!-- Event Visualizer -->
+                    <div
+                        style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.25rem; text-align: center;">
+                        <h4
+                            style="font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; color: #fff; text-transform: uppercase;">
+                            Active Asynchronous Flow
+                        </h4>
+
+                        <div style="display: flex; justify-content: space-around; align-items: center;">
+                            <div>
+                                <i class="fa-solid fa-bullhorn" style="font-size: 1.75rem; color: var(--accent);"></i>
+                                <div style="font-size: 0.75rem; font-weight: 600; margin-top: 0.35rem;">SNS Topic</div>
+                            </div>
+                            <i class="fa-solid fa-arrow-right-long" style="color: var(--text-muted);"></i>
+                            <div>
+                                <i class="fa-solid fa-envelope-open-text"
+                                    style="font-size: 1.75rem; color: var(--placed);"></i>
+                                <div style="font-size: 0.75rem; font-weight: 600; margin-top: 0.35rem;">SQS Queues</div>
+                            </div>
+                            <i class="fa-solid fa-arrow-right-long" style="color: var(--text-muted);"></i>
+                            <div>
+                                <i class="fa-solid fa-gears" style="font-size: 1.75rem; color: var(--delivered);"></i>
+                                <div style="font-size: 0.75rem; font-weight: 600; margin-top: 0.35rem;">Consumers</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="logs-panel" id="logs-panel">
+                        <div class="log-entry">[System] Ready to capture order events...</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Admin View Tab -->
+        <main class="glass-card hidden" id="admin-tab">
+            <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fa-solid fa-cubes-stacked" style="color: var(--delivered);"></i> Parcels Administration
+            </h2>
+
+            <!-- Stats dashboard -->
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card total">
+                    <div class="stat-value" id="stat-total">0</div>
+                    <div class="stat-label">Total Orders</div>
+                </div>
+                <div class="stat-card placed">
+                    <div class="stat-value" id="stat-placed">0</div>
+                    <div class="stat-label">Placed</div>
+                </div>
+                <div class="stat-card processing">
+                    <div class="stat-value" id="stat-processing">0</div>
+                    <div class="stat-label">Processing</div>
+                </div>
+                <div class="stat-card shipped">
+                    <div class="stat-value" id="stat-shipped">0</div>
+                    <div class="stat-label">Shipped</div>
+                </div>
+                <div class="stat-card delivered">
+                    <div class="stat-value" id="stat-delivered">0</div>
+                    <div class="stat-label">Delivered</div>
+                </div>
+            </div>
+
+            <!-- Table of orders -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Created Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table-body">
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                                <i class="fa-solid fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Loading orders
+                                database...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Live Order Tracker Modal -->
+    <div class="tracker-modal" id="tracker-modal">
+        <div class="tracker-content">
+            <button class="close-modal" onclick="closeTrackerModal()">&times;</button>
+            <h3
+                style="font-size: 1.35rem; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <i class="fa-solid fa-circle-check" style="color: var(--delivered);"></i> Order Placed Asynchronously!
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;" id="tracker-order-id">Order ID: #1</p>
+
+            <div class="tracker-steps">
+                <div class="tracker-line"></div>
+                <div class="tracker-line-progress" id="tracker-progress"></div>
+
+                <div class="step-node active pulse" id="step-placed">
+                    1
+                    <div class="step-label">Placed</div>
+                </div>
+                <div class="step-node" id="step-processing">
+                    2
+                    <div class="step-label">Processing</div>
+                </div>
+                <div class="step-node" id="step-shipped">
+                    3
+                    <div class="step-label">Shipped</div>
+                </div>
+                <div class="step-node" id="step-delivered">
+                    4
+                    <div class="step-label">Done</div>
+                </div>
+            </div>
+
+            <div
+                style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1.5rem; text-align: left;">
+                <p style="font-size: 0.95rem; line-height: 1.5; color: #fff;" id="tracker-status-text">
+                    Waiting for SQS queues to pick up the event...
+                </p>
+                <div style="margin-top: 1rem; display: flex; gap: 0.5rem;" id="invoice-download-section" class="hidden">
+                    <a id="invoice-download-btn" href="#" target="_blank" class="btn-action invoice">
+                        <i class="fa-solid fa-file-invoice"></i> Download Invoice (Presigned S3 URL)
+                    </a>
+                </div>
+            </div>
+
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+                Open the <strong>Admin Dashboard</strong> to ship and complete the lifecycle!
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'portal';
+        let currentOrderId = null;
+        let pollInterval = null;
+
+        // Auto-refresh the statistics and orders list in Admin mode
+        setInterval(() => {
+            if (currentTab === 'admin') {
+                loadAdminData();
+            }
+        }, 3000);
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.main-layout, #admin-tab').forEach(el => el.classList.add('hidden'));
+
+            if (tab === 'portal') {
+                event.target.classList.add('active');
+                document.getElementById('portal-tab').classList.remove('hidden');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('admin-tab').classList.remove('hidden');
+                loadAdminData();
+            }
+        }
+
+        function toggleCheckbox(element) {
+            const checkbox = element.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            if (checkbox.checked) {
+                element.classList.add('selected');
+            } else {
+                element.classList.remove('selected');
+            }
+        }
+
+        // Add custom log entry to terminal emulator
+        function addLog(text) {
+            const logsPanel = document.getElementById('logs-panel');
+            const date = new Date().toLocaleTimeString();
+            logsPanel.innerHTML += `<div class="log-entry">[${date}] ${text}</div>`;
+            logsPanel.scrollTop = logsPanel.scrollHeight;
+        }
+
+        // Handle order placement form submission
+        async function submitOrder() {
+            const name = document.getElementById('customerName').value.trim();
+            if (!name) {
+                alert('Please enter your name.');
+                return;
+            }
+
+            const items = [];
+            for (let i = 1; i <= 4; i++) {
+                const cb = document.getElementById('item' + i);
+                if (cb && cb.checked) {
+                    items.push(cb.value);
+                }
+            }
+
+            if (items.length === 0) {
+                alert('Please select at least one food item.');
+                return;
+            }
+
+            addLog(`🛒 Submitting order to backend: Customer="${name}" Items=${JSON.stringify(items)}`);
+
+            try {
+                const response = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customerName: name, items: items })
+                });
+
+                if (!response.ok) throw new Error('Failed to create order');
+                const order = await response.json();
+
+                currentOrderId = order.id;
+                addLog(`💾 Order #${order.id} saved in H2 Database successfully.`);
+                addLog(`📤 Published OrderPlacedEvent to SNS topic. SQS queues notified.`);
+
+                // Show tracker modal
+                openTrackerModal(order.id);
+
+            } catch (err) {
+                addLog(`❌ Error placing order: ${err.message}`);
+                alert('Error creating order.');
+            }
+        }
+
+        function openTrackerModal(id) {
+            document.getElementById('tracker-order-id').innerText = `Order ID: #${id}`;
+            document.getElementById('tracker-modal').classList.add('show');
+            resetTrackerSteps();
+
+            // Periodically check SQS / DB progress for this order
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(() => checkOrderProgress(id), 1000);
+        }
+
+        function closeTrackerModal() {
+            document.getElementById('tracker-modal').classList.remove('show');
+            if (pollInterval) clearInterval(pollInterval);
+        }
+
+        function resetTrackerSteps() {
+            document.getElementById('tracker-progress').style.width = '0%';
+            document.querySelectorAll('.step-node').forEach(node => {
+                node.className = 'step-node';
+            });
+            document.getElementById('step-placed').className = 'step-node active pulse';
+            document.getElementById('tracker-status-text').innerHTML =
+                `<i class="fa-solid fa-circle-notch fa-spin" style="color: var(--placed); margin-right: 0.5rem;"></i> Order placed! SQS Consumers processing...`;
+            document.getElementById('invoice-download-section').classList.add('hidden');
+        }
+
+        async function checkOrderProgress(id) {
+            try {
+                const response = await fetch(`/api/orders/${id}`);
+                if (!response.ok) return;
+                const order = await response.json();
+
+                updateTrackerUI(order);
+
+                // If it reached Delivered, stop polling
+                if (order.status === 'DELIVERED') {
+                    clearInterval(pollInterval);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function updateTrackerUI(order) {
+            const progress = document.getElementById('tracker-progress');
+            const stepPlaced = document.getElementById('step-placed');
+            const stepProcessing = document.getElementById('step-processing');
+            const stepShipped = document.getElementById('step-shipped');
+            const stepDelivered = document.getElementById('step-delivered');
+            const statusText = document.getElementById('tracker-status-text');
+
+            if (order.status === 'PLACED') {
+                progress.style.width = '0%';
+                stepPlaced.className = 'step-node active pulse';
+            }
+            else if (order.status === 'PROCESSING') {
+                progress.style.width = '33%';
+                stepPlaced.className = 'step-node completed';
+                stepProcessing.className = 'step-node active pulse';
+                statusText.innerHTML = `<i class="fa-solid fa-gears" style="color: var(--processing); margin-right: 0.5rem;"></i> <strong>SQS SQS Consumers Fired:</strong> Delivery queue processed! Label created. Invoice uploaded to S3.`;
+
+                // Retrieve invoice link
+                if (order.invoiceS3Key) {
+                    showInvoiceDownloadLink(order.id);
+                }
+            }
+            else if (order.status === 'SHIPPED') {
+                progress.style.width = '66%';
+                stepPlaced.className = 'step-node completed';
+                stepProcessing.className = 'step-node completed';
+                stepShipped.className = 'step-node active pulse';
+                statusText.innerHTML = `<i class="fa-solid fa-truck-fast" style="color: var(--shipped); margin-right: 0.5rem;"></i> <strong>Order Dispatched:</strong> Admin shipped the package. On the way!`;
+                if (order.invoiceS3Key) {
+                    showInvoiceDownloadLink(order.id);
+                }
+            }
+            else if (order.status === 'DELIVERED') {
+                progress.style.width = '100%';
+                stepPlaced.className = 'step-node completed';
+                stepProcessing.className = 'step-node completed';
+                stepShipped.className = 'step-node completed';
+                stepDelivered.className = 'step-node completed';
+                statusText.innerHTML = `<i class="fa-solid fa-circle-check" style="color: var(--delivered); margin-right: 0.5rem;"></i> <strong>Order Done:</strong> Food saved! Delivered successfully. Thank you for protecting the environment. 🌱`;
+                if (order.invoiceS3Key) {
+                    showInvoiceDownloadLink(order.id);
+                }
+            }
+        }
+
+        async function showInvoiceDownloadLink(orderId) {
+            const section = document.getElementById('invoice-download-section');
+            if (!section.classList.contains('hidden')) return; // Already loaded
+
+            try {
+                const response = await fetch(`/api/orders/${orderId}/invoice`);
+                if (!response.ok) return;
+                const data = await response.json();
+
+                const btn = document.getElementById('invoice-download-btn');
+                btn.href = data.invoiceUrl;
+                section.classList.remove('hidden');
+                addLog(`🧾 [Invoice Service] Presigned URL retrieved for Order #${orderId}`);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Admin functions
+        async function loadAdminData() {
+            try {
+                // 1. Fetch Stats
+                const statsRes = await fetch('/api/orders/stats');
+                const stats = await statsRes.json();
+
+                document.getElementById('stat-total').innerText = stats.total;
+                document.getElementById('stat-placed').innerText = stats.placed;
+                document.getElementById('stat-processing').innerText = stats.processing;
+                document.getElementById('stat-shipped').innerText = stats.shipped;
+                document.getElementById('stat-delivered').innerText = stats.delivered;
+
+                // 2. Fetch Orders
+                const ordersRes = await fetch('/api/orders');
+                const orders = await ordersRes.json();
+
+                const tableBody = document.getElementById('orders-table-body');
+                if (orders.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">No orders found. Place an order first!</td></tr>`;
+                    return;
+                }
+
+                tableBody.innerHTML = '';
+                orders.sort((a, b) => b.id - a.id).forEach(order => {
+                    let itemsHtml = order.items.map(item => `<span style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.8rem; margin-right: 0.25rem;">${item}</span>`).join('');
+
+                    let actionsHtml = '';
+                    if (order.status === 'PROCESSING') {
+                        actionsHtml = `<button class="btn-action ship" onclick="transitionOrder(${order.id}, 'ship')"><i class="fa-solid fa-truck-fast"></i> Ship Order</button>`;
+                    } else if (order.status === 'SHIPPED') {
+                        actionsHtml = `<button class="btn-action deliver" onclick="transitionOrder(${order.id}, 'deliver')"><i class="fa-solid fa-circle-check"></i> Deliver</button>`;
+                    } else if (order.status === 'DELIVERED') {
+                        actionsHtml = `<span style="color: var(--delivered); font-weight:600; font-size:0.85rem;"><i class="fa-solid fa-clipboard-check"></i> Completed</span>`;
+                    } else {
+                        actionsHtml = `<span style="color: var(--text-muted); font-size:0.85rem;">Processing SQS...</span>`;
+                    }
+
+                    const dateStr = new Date(order.createdAt).toLocaleString();
+                    tableBody.innerHTML += `
+                        <tr>
+                            <td style="font-weight: 600;">#${order.id}</td>
+                            <td>${order.customerName}</td>
+                            <td>${itemsHtml}</td>
+                            <td style="font-size: 0.85rem; color: var(--text-muted);">${dateStr}</td>
+                            <td>
+                                <span class="status-badge ${order.status.toLowerCase()}">
+                                    <i class="fa-solid fa-circle" style="font-size: 0.5rem; margin-right: 0.25rem;"></i>${order.status}
+                                </span>
+                            </td>
+                            <td class="actions-cell">${actionsHtml}</td>
+                        </tr>
+                    `;
+                });
+
+            } catch (err) {
+                console.error("Error loading admin dashboard data:", err);
+            }
+        }
+
+        async function transitionOrder(id, action) {
+            try {
+                addLog(`⚙️ [Admin] Sending request to ${action} order #${id}...`);
+                const response = await fetch(`/api/orders/${id}/${action}`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) throw new Error(`Failed to ${action} order`);
+
+                addLog(`✅ [Admin] Order #${id} successfully transitioned to ${action === 'ship' ? 'SHIPPED' : 'DELIVERED'}.`);
+                loadAdminData();
+            } catch (err) {
+                alert(`Error processing transition: ${err.message}`);
+            }
+        }
+    </script>
+</body>
+
+</html>
