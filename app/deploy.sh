@@ -87,8 +87,23 @@ echo "Step 3: Copying JAR and Dockerfile to EC2 server ($EC2_IP)..."
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=no target/cloud-infra-poc-0.0.1-SNAPSHOT.jar ubuntu@"$EC2_IP":/home/ubuntu/app.jar
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=no target/Dockerfile.run ubuntu@"$EC2_IP":/home/ubuntu/Dockerfile.run
 
-echo "Step 4: Building Docker image on EC2 and starting the app container..."
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ubuntu@"$EC2_IP" << EOF
+  # Wait for Docker to be fully installed by the EC2 boot script (user_data)
+  echo "Waiting for Docker installation to complete on the EC2 instance..."
+  for i in {1..30}; do
+    if command -v docker &> /dev/null; then
+      echo "Docker is ready!"
+      break
+    fi
+    echo "Docker is still installing in the background... waiting 10 seconds (try \$i/30)"
+    sleep 10
+  done
+
+  if ! command -v docker &> /dev/null; then
+    echo "ERROR: Docker was not installed within 5 minutes."
+    exit 1
+  fi
+
   # Stop and remove the old container if it exists
   sudo docker stop spring-boot-app || true
   sudo docker rm spring-boot-app || true
