@@ -1,16 +1,35 @@
 #!/bin/bash
 set -e
 
-# Step 1: Provision Cloud Infrastructure via Terraform
-echo "🌐 Step 1: Running Terraform Apply to provision cloud infrastructure..."
-cd ../terraform
-terraform apply -auto-approve
+# Parse arguments to select IaC provider (default: terraform)
+USE_PULUMI=false
+if [ "$1" == "--pulumi" ]; then
+    USE_PULUMI=true
+fi
 
-echo "🔍 Extracting Terraform outputs..."
-EC2_IP=$(terraform output -raw ec2_public_ip)
-RDS_ENDPOINT=$(terraform output -raw rds_endpoint)
-RDS_HOST=$(echo "$RDS_ENDPOINT" | cut -d':' -f1)
-cd ../app
+if [ "$USE_PULUMI" = true ]; then
+    echo "🌐 Step 1: Running Pulumi Up to provision cloud infrastructure..."
+    cd ../pulumi
+    source venv/bin/activate
+    export PULUMI_CONFIG_PASSPHRASE="SecurePass123!"
+    ~/.pulumi/bin/pulumi up --yes
+    
+    echo "🔍 Extracting Pulumi outputs..."
+    EC2_IP=$(~/.pulumi/bin/pulumi stack output ec2_public_ip)
+    RDS_ENDPOINT=$(~/.pulumi/bin/pulumi stack output rds_endpoint)
+    RDS_HOST=$(echo "$RDS_ENDPOINT" | cut -d':' -f1)
+    cd ../app
+else
+    echo "🌐 Step 1: Running Terraform Apply to provision cloud infrastructure..."
+    cd ../terraform
+    terraform apply -auto-approve
+    
+    echo "🔍 Extracting Terraform outputs..."
+    EC2_IP=$(terraform output -raw ec2_public_ip)
+    RDS_ENDPOINT=$(terraform output -raw rds_endpoint)
+    RDS_HOST=$(echo "$RDS_ENDPOINT" | cut -d':' -f1)
+    cd ../app
+fi
 
 # Load passwords/users from .env if it exists, otherwise fall back to defaults
 DB_USER="dbadmin"

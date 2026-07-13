@@ -1,2 +1,3 @@
 config:
   aws:region: eu-north-1
+encryptionsalt: v1:be1cip4rwZk=:v1:2VYdnHMb/KXyWvIC:ORrmtOb0K0lDr224XUWsDhjhhrkYYw==
