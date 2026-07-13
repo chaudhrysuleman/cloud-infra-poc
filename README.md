@@ -50,9 +50,9 @@ graph TD
 
 The project follows a decoupled, 3-stage lifecycle representing professional cloud engineering practices:
 
-### 1. Infrastructure Provisioning Stage (Terraform)
+### 1. Infrastructure Provisioning Stage (Terraform or Pulumi)
 * **The Goal:** Define and provision the entire hosting network and resources before running any code.
-* **Execution:** Run `terraform apply` to instruct AWS to create the Custom VPC, Subnets, Security Groups, IAM EC2 Instance Profiles, RDS Database, S3 Bucket, SQS Queues, and SNS Topics.
+* **Execution:** Run `terraform apply` (or `pulumi up`) to instruct AWS to create the Custom VPC, Subnets, Security Groups, IAM EC2 Instance Profiles, RDS Database, S3 Bucket, SQS Queues, and SNS Topics.
 * **Output:** Generates the raw cloud endpoints (e.g., RDS endpoint, S3 Bucket ID, SNS Topic ARN) needed by the application.
 
 ### 2. Fully Managed Cloud Layer (AWS Managed Services)
@@ -85,7 +85,12 @@ The project follows a decoupled, 3-stage lifecycle representing professional clo
   * `Dockerfile`: Multi-stage Docker build definition.
   * `docker-compose.yml`: For local development and testing.
   * `deploy.sh`: Script automating local compilation, file copy, and EC2 remote container deployment.
-* **`terraform/`**: Infrastructure configuration files.
+* **`pulumi/`**: Infrastructure configuration using Pulumi (Python).
+  * `Pulumi.yaml`: Project metadata configuration.
+  * `Pulumi.dev.yaml`: Dev stack configurations (region details).
+  * `requirements.txt`: Python package dependencies.
+  * `__main__.py`: Complete infrastructure mapping in Python code.
+* **`terraform/`**: Infrastructure configuration using Terraform (HCL).
   * `providers.tf`: AWS provider specification.
   * `variables.tf`: Input variables (region, CIDRs, DB credentials).
   * `vpc.tf`: Networking (VPC, Subnets, Internet Gateway, DB Subnet Group).
