@@ -17,6 +17,8 @@ This project demonstrates production-grade backend design patterns:
 
 ## 🏗️ Architecture Design
 
+![Cloud Architecture](architecture-diagram.png)
+
 The architecture is provisioned in **AWS Stockholm (`eu-north-1`)** and uses IAM Instance Profiles to securely access resources without hardcoding keys:
 
 ```mermaid
