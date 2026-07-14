@@ -14,9 +14,15 @@ if [ "$USE_PULUMI" = true ]; then
     ~/.pulumi/bin/pulumi up --yes
     
     echo "🔍 Extracting Pulumi outputs..."
-    EC2_IP=$(~/.pulumi/bin/pulumi stack output ec2_public_ip)
     RDS_ENDPOINT=$(~/.pulumi/bin/pulumi stack output rds_endpoint)
     RDS_HOST=$(echo "$RDS_ENDPOINT" | cut -d':' -f1)
+    ALB_DNS=$(~/.pulumi/bin/pulumi stack output alb_dns)
+    
+    echo "📡 Querying AWS for active EC2 Auto Scaling instance IP..."
+    EC2_IP=$(aws ec2 describe-instances \
+        --filters "Name=tag:Name,Values=poc-asg-instance" "Name=instance-state-name,Values=running" \
+        --query "Reservations[0].Instances[0].PublicIpAddress" \
+        --output text)
     cd ../app
 else
     echo "🌐 Step 1: Running Terraform Apply to provision cloud infrastructure..."
@@ -146,4 +152,9 @@ ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ubuntu@"$EC2_IP" << EOF
 EOF
 
 echo "🎉 Deployment completed successfully!"
-echo "Check the health: http://$EC2_IP/api/orders/healthcheck"
+if [ "$USE_PULUMI" = true ]; then
+    echo "🔗 Access via Load Balancer URL: http://$ALB_DNS"
+    echo "Check the health: http://$ALB_DNS/api/orders/healthcheck"
+else
+    echo "Check the health: http://$EC2_IP/api/orders/healthcheck"
+fi

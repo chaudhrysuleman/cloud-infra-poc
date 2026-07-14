@@ -35,6 +35,23 @@ resources:
       tags:
         Name: poc-public-subnet
 
+  # Second public subnet in eu-north-1b for multi-AZ ALB support
+  publicSubnet2:
+    type: aws:ec2:Subnet
+    properties:
+      vpcId: ${vpc.id}
+      cidrBlock: 10.0.4.0/24
+      mapPublicIpOnLaunch: true
+      availabilityZone: eu-north-1b
+      tags:
+        Name: poc-public-subnet-2
+
+  publicRtAssoc2:
+    type: aws:ec2:RouteTableAssociation
+    properties:
+      subnetId: ${publicSubnet2.id}
+      routeTableId: ${publicRt.id}
+
   privateSubnet1:
     type: aws:ec2:Subnet
     properties:
@@ -72,6 +89,28 @@ resources:
   # ==========================================
   # 2. SECURITY GROUPS (Firewalls)
   # ==========================================
+
+  # ALB security group: accepts HTTP from the public internet
+  albSg:
+    type: aws:ec2:SecurityGroup
+    properties:
+      vpcId: ${vpc.id}
+      description: Security group for the Application Load Balancer
+      ingress:
+        - protocol: tcp
+          fromPort: 80
+          toPort: 80
+          cidrBlocks: ["0.0.0.0/0"]
+          description: Allow HTTP from internet
+      egress:
+        - protocol: "-1"
+          fromPort: 0
+          toPort: 0
+          cidrBlocks: ["0.0.0.0/0"]
+      tags:
+        Name: poc-alb-security-group
+
+  # EC2 security group: port 80 now locked to traffic from the ALB only
   ec2Sg:
     type: aws:ec2:SecurityGroup
     properties:
@@ -81,8 +120,9 @@ resources:
         - protocol: tcp
           fromPort: 80
           toPort: 80
-          cidrBlocks: ["0.0.0.0/0"]
-          description: Allow HTTP public traffic
+          securityGroups:
+            - ${albSg.id}
+          description: Allow HTTP from ALB only
         - protocol: tcp
           fromPort: 22
           toPort: 22
@@ -237,6 +277,52 @@ resources:
                   aws:SourceArn: ${snsTopic.arn}
 
   # ==========================================
+  # 3b. LOAD BALANCER (ALB + Target Group + Listener)
+  # ==========================================
+
+  # Application Load Balancer spans both public subnets across AZs
+  alb:
+    type: aws:lb:LoadBalancer
+    properties:
+      internal: false
+      loadBalancerType: application
+      securityGroups:
+        - ${albSg.id}
+      subnets:
+        - ${publicSubnet.id}
+        - ${publicSubnet2.id}
+      tags:
+        Name: poc-alb
+
+  # Target group routes ALB traffic to registered EC2 instances on port 80
+  targetGroup:
+    type: aws:lb:TargetGroup
+    properties:
+      port: 80
+      protocol: HTTP
+      vpcId: ${vpc.id}
+      targetType: instance
+      healthCheck:
+        path: /
+        healthyThreshold: 2
+        unhealthyThreshold: 3
+        interval: 30
+        timeout: 10
+      tags:
+        Name: poc-target-group
+
+  # HTTP listener on port 80 forwards to the target group
+  albListener:
+    type: aws:lb:Listener
+    properties:
+      loadBalancerArn: ${alb.arn}
+      port: 80
+      protocol: HTTP
+      defaultActions:
+        - type: forward
+          targetGroupArn: ${targetGroup.arn}
+
+  # ==========================================
   # 4. IAM ROLES (EC2 Service Profile)
   # ==========================================
   ec2Role:
@@ -316,12 +402,15 @@ resources:
       dbSubnetGroupName: ${rdsSubnetGroup.name}
       vpcSecurityGroupIds:
         - ${rdsSg.id}
+      # Multi-AZ creates a synchronous standby replica in a second AZ.
+      # AWS handles automatic failover (~60-120 s) with no manual intervention.
+      multiAz: true
       skipFinalSnapshot: true
       tags:
         Name: poc-postgres-database
 
   # ==========================================
-  # 6. COMPUTE (EC2 Instance)
+  # 6. COMPUTE (Auto Scaling Group + Launch Template)
   # ==========================================
   sshKey:
     type: aws:ec2:KeyPair
@@ -330,41 +419,123 @@ resources:
       publicKey:
         fn::readFile: /Users/muhammad/.ssh/id_ed25519_github.pub
 
-  webHost:
-    type: aws:ec2:Instance
+  # Launch template defines the instance configuration used by the ASG.
+  # Each instance starts Docker on boot; the application is deployed via
+  # the existing deploy.sh targeting the ALB DNS name.
+  launchTemplate:
+    type: aws:ec2:LaunchTemplate
     properties:
-      instanceType: t3.micro
-      ami:
+      imageId:
         fn::invoke:
           function: aws:ec2:getAmi
           arguments:
             mostRecent: true
             filters:
               - name: name
-                values: ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+                values:
+                  ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
               - name: virtualization-type
                 values: ["hvm"]
             owners: ["099720109477"]
           return: id
-      subnetId: ${publicSubnet.id}
+      instanceType: t3.micro
+      keyName: ${sshKey.keyName}
+      iamInstanceProfile:
+        name: ${ec2InstanceProfile.name}
       vpcSecurityGroupIds:
         - ${ec2Sg.id}
-      keyName: ${sshKey.keyName}
-      iamInstanceProfile: ${ec2InstanceProfile.name}
-      userData: |
-        #!/bin/bash
-        apt-get update -y
-        apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-        add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-        apt-get update -y
-        apt-get install -y docker-ce
-        systemctl start docker
-        systemctl enable docker
+      # userData must be base64-encoded for LaunchTemplates
+      userData:
+        fn::toBase64: |
+          #!/bin/bash
+          apt-get update -y
+          apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+          add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          apt-get update -y
+          apt-get install -y docker-ce
+          systemctl start docker
+          systemctl enable docker
       tags:
-        Name: poc-ec2-instance
+        Name: poc-launch-template
+
+  # Auto Scaling Group: runs 1–3 instances across both public subnets.
+  # Registers instances with the ALB target group automatically.
+  asg:
+    type: aws:autoscaling:Group
+    properties:
+      minSize: 1
+      maxSize: 3
+      desiredCapacity: 1
+      launchTemplate:
+        id: ${launchTemplate.id}
+        version: $Latest
+      vpcZoneIdentifiers:
+        - ${publicSubnet.id}
+        - ${publicSubnet2.id}
+      targetGroupArns:
+        - ${targetGroup.arn}
+      # Use ELB health checks so unhealthy instances are replaced automatically
+      healthCheckType: ELB
+      healthCheckGracePeriod: 300
+      tags:
+        - key: Name
+          value: poc-asg-instance
+          propagateAtLaunch: true
+
+  # Scale out: add one instance when average CPU >= 70% for two periods
+  scaleOutPolicy:
+    type: aws:autoscaling:Policy
+    properties:
+      autoscalingGroupName: ${asg.name}
+      adjustmentType: ChangeInCapacity
+      scalingAdjustment: 1
+      cooldown: 300
+
+  # Scale in: remove one instance when average CPU <= 30% for two periods
+  scaleInPolicy:
+    type: aws:autoscaling:Policy
+    properties:
+      autoscalingGroupName: ${asg.name}
+      adjustmentType: ChangeInCapacity
+      scalingAdjustment: -1
+      cooldown: 300
+
+  cpuHighAlarm:
+    type: aws:cloudwatch:MetricAlarm
+    properties:
+      comparisonOperator: GreaterThanOrEqualToThreshold
+      evaluationPeriods: 2
+      metricName: CPUUtilization
+      namespace: AWS/EC2
+      period: 120
+      statistic: Average
+      threshold: 70
+      dimensions:
+        AutoScalingGroupName: ${asg.name}
+      alarmActions:
+        - ${scaleOutPolicy.arn}
+      tags:
+        Name: poc-cpu-high-alarm
+
+  cpuLowAlarm:
+    type: aws:cloudwatch:MetricAlarm
+    properties:
+      comparisonOperator: LessThanOrEqualToThreshold
+      evaluationPeriods: 2
+      metricName: CPUUtilization
+      namespace: AWS/EC2
+      period: 120
+      statistic: Average
+      threshold: 30
+      dimensions:
+        AutoScalingGroupName: ${asg.name}
+      alarmActions:
+        - ${scaleInPolicy.arn}
+      tags:
+        Name: poc-cpu-low-alarm
 
 outputs:
-  ec2_public_ip: ${webHost.publicIp}
-  ec2_url: http://${webHost.publicIp}
+  alb_dns: ${alb.dnsName}
+  alb_url: http://${alb.dnsName}
   rds_endpoint: ${postgresDb.endpoint}
