@@ -166,6 +166,21 @@ We use a fully automated orchestration script `deploy.sh` that provisions the cl
 
 5. Open the **Load Balancer URL** printed in your terminal output in your browser to view your live tracking dashboard!
 
+## 🎨 Visual Infrastructure & AI Assistants
+
+This project supports modern visual design and AI generation tools for rapid cloud engineering:
+
+### 1. Visual Drag-and-Drop (Brainboard)
+Instead of writing Terraform code manually, you can manage and visualize this entire infrastructure dynamically:
+* **Interactive Canvas:** Open the [Live Brainboard Design Board](https://app.brainboard.co/a/1edfbcaf-db32-4be2-bb9c-105a63174f2e/design) for this project.
+* **Bi-directional Sync:** Drag-and-drop new AWS resources or connect existing ones on the canvas, and Brainboard will instantly generate the equivalent Terraform code.
+* **Reverse Engineering:** You can import changes from the `/terraform` folder in this repository back into Brainboard to auto-update the diagram.
+
+### 2. AI Infrastructure Copilots (Pulumi Neo / Pulumi AI)
+If you need to make changes or build out further infrastructure options:
+* **Pulumi AI:** Access [pulumi.com/ai](https://www.pulumi.com/ai) and describe your changes in plain English (e.g., *"Add a CloudWatch alarm to trigger auto-scaling when CPU exceeds 80%"*). It will output the complete code block in Pulumi YAML.
+* **Pulumi Neo:** Use the interactive terminal agent (`pulumi neo`) in your command line for live, contextual help with stack diagnostics and upgrades.
+
 ---
 
 ## 🧹 Cleaning Up Resources
